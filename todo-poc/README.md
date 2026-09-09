@@ -57,3 +57,42 @@ You should see the report like this:
 [iOS #0-0] 3 passing (15.2s)
 
 ```
+
+
+## Build .ipa
+
+
+
+Get the team ID:
+
+```bash
+xcodebuild -showBuildSettings \
+  -workspace ios/todopoc.xcworkspace \
+  -scheme todopoc | grep DEVELOPMENT_TEAM
+```
+
+Replace 'TEAM_ID' and create ExportOptions file.
+
+```bash
+cat > ios/ExportOptions.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd"\>
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>development</string>
+    <key>signingStyle</key>
+    <string>automatic</string>
+    <key>teamID</key>
+    <string>{TEAM_ID}</string>
+</dict>
+</plist>
+EOF
+```
+
+After run the following script to build and export ios *.ipa
+
+```bash
+./scripts/build-ios.sh
+```

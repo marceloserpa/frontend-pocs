@@ -96,3 +96,14 @@ After run the following script to build and export ios *.ipa
 ```bash
 ./scripts/build-ios.sh
 ```
+
+
+## Run Appium Test on BrowserStack
+
+```bash
+npm run test:bstack
+```
+
+Enter into BrowserStack Dashboard:
+
+![](docs/images/browserstack.png)

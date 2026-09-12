@@ -1,3 +1,4 @@
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,56 +6,58 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTodoLists } from '@/context/todo-lists-context';
 import { useTheme } from '@/hooks/use-theme';
 
-type Task = {
-  id: string;
-  text: string;
-  done: boolean;
-};
-
-export default function HomeScreen() {
+export default function TodoListDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const theme = useTheme();
+  const { lists, addTask, toggleTask, deleteTask } = useTodoLists();
   const [text, setText] = useState('');
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  const list = lists.find((item) => item.id === id);
+
+  if (!list) {
+    return null;
+  }
+
+  const listId = list.id;
+  const tasks = list.tasks;
   const completedCount = tasks.filter((task) => task.done).length;
   const pendingDeleteTask = tasks.find((task) => task.id === pendingDeleteId) ?? null;
 
-  function addTask() {
+  function handleAddTask() {
     const trimmed = text.trim();
     if (!trimmed) {
       return;
     }
-    setTasks((prev) => [
-      ...prev,
-      { id: `${prev.length}-${trimmed}-${Math.random()}`, text: trimmed, done: false },
-    ]);
+    addTask(listId, trimmed);
     setText('');
-  }
-
-  function toggleTask(id: string) {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, done: !task.done } : task)),
-    );
   }
 
   function confirmDelete() {
     if (pendingDeleteId === null) {
       return;
     }
-    setTasks((prev) => prev.filter((task) => task.id !== pendingDeleteId));
+    deleteTask(listId, pendingDeleteId);
     setPendingDeleteId(null);
   }
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: list.name,
+          headerLeft: () => (
+            <Pressable testID="back-button" onPress={() => router.back()}>
+              <ThemedText type="link">Back</ThemedText>
+            </Pressable>
+          ),
+        }}
+      />
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="subtitle" style={styles.title}>
-          Todo List
-        </ThemedText>
-
         <ThemedText testID="task-counter" type="small" themeColor="textSecondary">
           {completedCount}/{tasks.length} completed
         </ThemedText>
@@ -70,13 +73,13 @@ export default function HomeScreen() {
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
-            onSubmitEditing={addTask}
+            onSubmitEditing={handleAddTask}
             returnKeyType="done"
           />
           <Pressable
             testID="add-task-button"
             style={[styles.addButton, { backgroundColor: theme.backgroundSelected }]}
-            onPress={addTask}
+            onPress={handleAddTask}
           >
             <ThemedText type="smallBold">ADD</ThemedText>
           </Pressable>
@@ -102,7 +105,7 @@ export default function HomeScreen() {
             <Pressable
               testID={`task-row-${item.id}`}
               style={[styles.taskRow, { backgroundColor: theme.backgroundElement }]}
-              onPress={() => toggleTask(item.id)}
+              onPress={() => toggleTask(listId, item.id)}
               onLongPress={() => setPendingDeleteId(item.id)}
             >
               <ThemedView
@@ -187,9 +190,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     maxWidth: MaxContentWidth,
     width: '100%',
-  },
-  title: {
-    textAlign: 'center',
   },
   inputRow: {
     flexDirection: 'row',
